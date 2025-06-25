@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "texteffects",
+  "version": "${version}",
+  "name": "TextEffects",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "LGPL-3.0",
+  "icon": "assets/texteffects/icon.png",
+  "environment": "server",
+  "entrypoints": {
+    "main": [
+      "de.tomalbrc.texteffects.TextEffects"
+    ]
+  },
+  "mixins": [
+    "texteffects.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
