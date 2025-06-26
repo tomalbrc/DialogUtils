@@ -1,4 +1,4 @@
-package de.tomalbrc.texteffects.util;
+package de.tomalbrc.dialogutils.util;
 
 import eu.pb4.placeholders.api.TextParserUtils;
 import net.minecraft.network.chat.Component;

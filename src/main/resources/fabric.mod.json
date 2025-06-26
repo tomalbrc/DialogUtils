@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
-  "id": "texteffects",
+  "id": "dialogutils",
   "version": "${version}",
-  "name": "TextEffects",
+  "name": "DialogUtils",
   "description": "",
   "authors": [],
   "contact": {},
   "license": "LGPL-3.0",
-  "icon": "assets/texteffects/icon.png",
+  "icon": "assets/dialogutils/icon.png",
   "environment": "server",
   "entrypoints": {
     "main": [
-      "de.tomalbrc.texteffects.TextEffects"
+      "de.tomalbrc.dialogutils.DialogUtils"
     ]
   },
   "mixins": [

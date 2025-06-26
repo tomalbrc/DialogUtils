@@ -1,28 +1,23 @@
-package de.tomalbrc.texteffects.util;
+package de.tomalbrc.dialogutils.util;
 
+import de.tomalbrc.dialogutils.DialogUtils;
 import eu.pb4.mapcanvas.api.font.CanvasFont;
 import eu.pb4.mapcanvas.impl.font.BitmapFont;
 import eu.pb4.mapcanvas.impl.font.serialization.VanillaFontReader;
 import eu.pb4.polymer.resourcepack.api.ResourcePackBuilder;
-import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 
 import java.io.ByteArrayInputStream;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class TextAligner {
-    public static ResourcePackBuilder builder;
-    private static BitmapFont fontReader;
-    public static Integer FONT_INDEX = 0xF000;
-
     private static final String BACKSPACE_CHAR = " ";
-    private static final String BACKSPACE_FONT_OPEN = "<font:texteffects:align>";
+    private static final String BACKSPACE_FONT_OPEN = "<font:" + DialogUtils.MODID + ":align>";
     private static final String BACKSPACE_FONT_CLOSE = "</font>";
 
     public enum Align {
@@ -30,8 +25,8 @@ public class TextAligner {
     }
 
     public static void init(ResourcePackBuilder resourcePackBuilder) {
-        builder = resourcePackBuilder;
-        fontReader = VanillaFontReader.build((x) -> new ByteArrayInputStream(Objects.requireNonNull(builder.getDataOrSource(x))), CanvasFont.Metadata.create("Resource Pack Font", List.of("Unknown"), "Generated"), ResourceLocation.withDefaultNamespace("default"));
+        Globals.RP_BUILDER = resourcePackBuilder;
+        Globals.FONT_READER = VanillaFontReader.build((x) -> new ByteArrayInputStream(Objects.requireNonNull(Globals.RP_BUILDER.getDataOrSource(x))), CanvasFont.Metadata.create("Resource Pack Font", List.of("Unknown"), "Generated"), ResourceLocation.withDefaultNamespace("default"));
     }
 
     public static String stripTags(String input) {
@@ -106,7 +101,7 @@ public class TextAligner {
     }
 
     public static int getGlyphWidth(int character, int offset) {
-        BitmapFont.Glyph glyph = fontReader.characters.getOrDefault(character, fontReader.defaultGlyph);
+        BitmapFont.Glyph glyph = Globals.FONT_READER.characters.getOrDefault(character, Globals.FONT_READER.defaultGlyph);
 
         if (glyph.logicalHeight() != 0 && glyph.height() != 0) {
             return glyph.width() + offset;

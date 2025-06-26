@@ -1,10 +1,12 @@
-package de.tomalbrc.texteffects.impl;
+package de.tomalbrc.dialogutils.impl;
 
-import de.tomalbrc.texteffects.Ticker;
-import de.tomalbrc.texteffects.gif.GifFrameExtractor;
-import de.tomalbrc.texteffects.util.TagWrapperParser;
-import de.tomalbrc.texteffects.util.TextAligner;
-import de.tomalbrc.texteffects.util.TextUtil;
+import de.tomalbrc.dialogutils.DialogUtils;
+import de.tomalbrc.dialogutils.Ticker;
+import de.tomalbrc.dialogutils.gif.GifFrameExtractor;
+import de.tomalbrc.dialogutils.util.Globals;
+import de.tomalbrc.dialogutils.util.TagWrapperParser;
+import de.tomalbrc.dialogutils.util.TextAligner;
+import de.tomalbrc.dialogutils.util.TextUtil;
 import eu.pb4.polymer.resourcepack.extras.api.format.font.BitmapProvider;
 import eu.pb4.polymer.resourcepack.extras.api.format.font.FontAsset;
 import eu.pb4.polymer.resourcepack.extras.api.format.font.FontProviderEntry;
@@ -59,7 +61,6 @@ public record Book(String title, int width, int linesPerPage, List<Page> pages) 
         List<Page.Line> texts = new ObjectArrayList<>();
 
         var imgDir = FabricLoader.getInstance().getConfigDir().resolve("books/img");
-
         List<String> fileLines = readLines(inputStream);
         for (String line : fileLines) {
             var wrappedLines = TagWrapperParser.wrapHtmlLine(line, pageWidth);
@@ -70,50 +71,54 @@ public record Book(String title, int width, int linesPerPage, List<Page> pages) 
                     StringBuilder leftTextBuilder = new StringBuilder();
                     for (String filepath : tags) {
                         var path = imgDir.resolve(filepath);
-                        var fileInputStream = new FileInputStream(path.toFile());
+                        var file = path.toFile();
+                        if (!file.exists())
+                            continue;
+                        var fileInputStream = new FileInputStream(file);
                         var height = ImageIO.read(fileInputStream).getHeight();
 
                         if (path.toString().endsWith(".gif")) {
                             var imgs = GifFrameExtractor.get(path);
                             for (BufferedImage img : imgs) {
                                 int index = imgs.indexOf(img);
-                                var glyphId = (char) (int) TextAligner.FONT_INDEX++;
+                                var glyphId = (char) (int) Globals.FONT_INDEX++;
 
                                 var modifiedFilename = FilenameUtils.getBaseName(filepath) + "_" + index + ".png";
 
                                 // add img as glyph
-                                fontAssetBuilder.add(new FontProviderEntry(new BitmapProvider(ResourceLocation.fromNamespaceAndPath("texteffects", "font/generated/" + modifiedFilename), List.of(String.valueOf(glyphId)), 3, height)));
+                                fontAssetBuilder.add(new FontProviderEntry(new BitmapProvider(ResourceLocation.fromNamespaceAndPath(DialogUtils.MODID, "font/generated/" + modifiedFilename), List.of(String.valueOf(glyphId)), 3, height)));
 
                                 // add img
                                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                                 ImageIO.write(img, "png", baos);
                                 var bytes = baos.toByteArray();
 
-                                TextAligner.builder.addData("assets/texteffects/textures/font/generated/" + modifiedFilename, bytes);
+                                Globals.RP_BUILDER.addData("assets/" + DialogUtils.MODID + "/textures/font/generated/" + modifiedFilename, bytes);
 
-                                var str = "<font:texteffects:generated>" + glyphId + "</font>";
+                                var str = "<font:" + DialogUtils.MODID + ":generated>" + glyphId + "</font>";
                                 frames.add(str);
                                 if (index == 0)
                                     leftTextBuilder.append(str);
                             }
                         } else {
-                            var glyphId = (char) (int) TextAligner.FONT_INDEX++;
+                            var glyphId = (char) (int) Globals.FONT_INDEX++;
 
                             fileInputStream = new FileInputStream(imgDir.resolve(filepath).toFile());
 
                             // add img as glyph
-                            fontAssetBuilder.add(new FontProviderEntry(new BitmapProvider(ResourceLocation.fromNamespaceAndPath("texteffects", "font/generated/" + filepath), List.of(String.valueOf(glyphId)), 3, height)));
+                            fontAssetBuilder.add(new FontProviderEntry(new BitmapProvider(ResourceLocation.fromNamespaceAndPath(DialogUtils.MODID, "font/generated/" + filepath), List.of(String.valueOf(glyphId)), 3, height)));
 
                             // add img
-                            TextAligner.builder.addData("assets/texteffects/textures/font/generated/" + filepath, fileInputStream.readAllBytes());
+                            Globals.RP_BUILDER.addData("assets/" + DialogUtils.MODID + "/textures/font/generated/" + filepath, fileInputStream.readAllBytes());
 
-                            leftTextBuilder.append("<font:texteffects:generated>").append(glyphId).append("</font>");
+                            leftTextBuilder.append("<font:" + DialogUtils.MODID + ":generated>").append(glyphId).append("</font>");
                         }
                     }
 
                     current = leftTextBuilder.toString();
                     texts.add(new Page.Line(current, frames));
                 } else {
+                    // not an image line
                     var finalString = TextAligner.alignSingleLine(current, TextAligner.Align.LEFT, pageWidth);
                     texts.add(new Page.Line(finalString, null));
                 }
@@ -151,20 +156,11 @@ public record Book(String title, int width, int linesPerPage, List<Page> pages) 
         openBookAtPage(player, pageNum, 0);
     }
 
-    public void openBookAtPage(ServerPlayer player, int pageNum, int frame) {
-        var page = this.pages().get(Mth.clamp(0, this.pages().size() - 1, pageNum));
-        if (page.animated() && !Ticker.contains(player.getUUID())) {
-            Ticker.add(player.getUUID(), new Ticker.ViewerData((server, time) -> {
-                if (Ticker.contains(player.getUUID()))
-                    openBookAtPage(player, pageNum, (int) time);
-            }, pageNum));
-        } else if (!page.animated()) {
-            Ticker.remove(player.getUUID());
-        }
-
+    public Dialog createDialog(int pageNum, int frame) {
+        var page = this.pages.get(pageNum);
         var dialogBodies = new ObjectArrayList<DialogBody>();
 
-        var cc = TextUtil.parse("<font:texteffects:ui>3</font>");
+        var cc = TextUtil.parse("<font:" + DialogUtils.MODID + ":ui>3</font>");
         cc = Component.empty().append(cc).withStyle(Style.EMPTY.withShadowColor(0));
 
         dialogBodies.add(new PlainMessage(cc, 1));
@@ -177,28 +173,46 @@ public record Book(String title, int width, int linesPerPage, List<Page> pages) 
             dialogBodies.add(new PlainMessage(formattedText, this.width() + 256));
         }
 
-        Holder<Dialog> dialogHolder = createDialogHolder(dialogBodies, this.title(), pageNum);
-
-        player.openDialog(dialogHolder);
+        return createDialogFromBody(dialogBodies, this.title(), pageNum);
     }
 
-    public @NotNull Holder<Dialog> createDialogHolder(List<DialogBody> list, String title, int page) {
-        Optional<Action> close = Optional.of(new StaticAction(new ClickEvent.RunCommand("texteffects close")));
-        var closeButton = new ActionButton(new CommonButtonData(Component.literal("Close"), 150), close);
+    public void openBookAtPage(ServerPlayer player, int pageNum, int frame) {
+        var page = this.pages().get(Mth.clamp(0, this.pages().size() - 1, pageNum));
+        if (page.animated() && !Ticker.contains(player.getUUID())) {
+            Ticker.add(player.getUUID(), new Ticker.ViewerData((server, time) -> {
+                if (Ticker.contains(player.getUUID()))
+                    openBookAtPage(player, pageNum, (int) time);
+            }, pageNum));
+        } else if (!page.animated()) {
+            Ticker.remove(player.getUUID());
+        }
+
+
+        Dialog dialogHolder = createDialog(pageNum, frame);
+
+        player.openDialog(Holder.direct(dialogHolder));
+    }
+
+    public @NotNull Dialog createDialogFromBody(List<DialogBody> list, String title, int page) {
         var data = new CommonDialogData(createTitle(title, page, this.pages.size()), Optional.empty(), false, false, DialogAction.NONE, list, List.of());
-        return Holder.direct(new MultiActionDialog(data, createButtons(title, page, this.pages.size()), Optional.of(closeButton), 4));
+        return new MultiActionDialog(data, createButtons(title, page, this.pages.size()), Optional.ofNullable(createCloseButton()), 4);
     }
 
-    public Component createTitle(String title, int page, int maxPage) {
+    public @NotNull Component createTitle(String title, int page, int maxPage) {
         var titleString = String.format("%s (Page %d / %d)", title, page + 1, this.pages.size());
         var formattedTitle = TextUtil.parse(titleString);
         formattedTitle = Component.empty().append(formattedTitle);
         return formattedTitle;
     }
 
-    public List<ActionButton> createButtons(String title, int page, int maxPage) {
-        var prevCmd = String.format("texteffects %s %d", title, Math.max(0, page - 1));
-        var nextCmd = String.format("texteffects %s %d", title, Math.min(maxPage, page + 1));
+    public ActionButton createCloseButton() {
+        Optional<Action> close = Optional.of(new StaticAction(new ClickEvent.RunCommand(DialogUtils.MODID + " close")));
+        return new ActionButton(new CommonButtonData(Component.literal("Close"), 150), close);
+    }
+
+    public @NotNull List<ActionButton> createButtons(String title, int page, int maxPage) {
+        var prevCmd = String.format(DialogUtils.MODID + " %s %d", title, Math.max(0, page - 1));
+        var nextCmd = String.format(DialogUtils.MODID + " %s %d", title, Math.min(maxPage, page + 1));
         Optional<Action> actionPrev = Optional.of(new StaticAction(new ClickEvent.RunCommand(prevCmd)));
         Optional<Action> actionNext = Optional.of(new StaticAction(new ClickEvent.RunCommand(nextCmd)));
         var prev = new ActionButton(new CommonButtonData(Component.literal("<"), 20), actionPrev);

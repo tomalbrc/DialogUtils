@@ -1,0 +1,3 @@
+accessWidener   v2  named
+accessible class net/minecraft/core/MappedRegistry$TagSet
+accessible field net/minecraft/tags/TagNetworkSerialization$NetworkPayload tags Ljava/util/Map;

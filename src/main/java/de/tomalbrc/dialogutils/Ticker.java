@@ -1,4 +1,4 @@
-package de.tomalbrc.texteffects;
+package de.tomalbrc.dialogutils;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 import net.minecraft.server.MinecraftServer;

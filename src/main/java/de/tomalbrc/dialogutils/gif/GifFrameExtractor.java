@@ -1,4 +1,4 @@
-package de.tomalbrc.texteffects.gif;
+package de.tomalbrc.dialogutils.gif;
 
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;

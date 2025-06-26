@@ -6,6 +6,10 @@ plugins {
 version = project.mod_version + "+" + project.minecraft_version
 group = project.maven_group
 
+loom {
+    accessWidenerPath = file("src/main/resources/dialogutils.accesswidener")
+}
+
 base {
     archivesName = project.archives_base_name
 }

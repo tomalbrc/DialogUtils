@@ -1,9 +1,11 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "de.tomalbrc.texteffects.mixin",
+  "package": "de.tomalbrc.dialogutils.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "ClientboundUpdateTagsPacketMixin",
+    "MappedRegistryMixin"
   ],
   "client": [
   ],

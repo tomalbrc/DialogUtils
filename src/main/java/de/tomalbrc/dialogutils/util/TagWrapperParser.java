@@ -1,4 +1,4 @@
-package de.tomalbrc.texteffects.util;
+package de.tomalbrc.dialogutils.util;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 

@@ -1,4 +1,4 @@
-package de.tomalbrc.texteffects.gif;
+package de.tomalbrc.dialogutils.gif;
 
 import java.awt.image.BufferedImage;
 
