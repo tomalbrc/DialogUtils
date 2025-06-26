@@ -1,8 +1,7 @@
-package de.tomalbrc.texteffects.impl;
+package de.tomalbrc.texteffects.util;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

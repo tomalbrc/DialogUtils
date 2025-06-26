@@ -1,5 +1,5 @@
 {
   "providers": [
-    {"type":"bitmap","file":"texteffects:font/background.png","ascent": 10,"height":256,"chars":["3"]}
+    {"type":"bitmap","file":"texteffects:font/background.png","ascent": 7,"height":256,"chars":["3"]}
   ]
 }

@@ -1,21 +1,15 @@
-package de.tomalbrc.texteffects.impl;
+package de.tomalbrc.texteffects.util;
 
 import eu.pb4.mapcanvas.api.font.CanvasFont;
 import eu.pb4.mapcanvas.impl.font.BitmapFont;
-import eu.pb4.mapcanvas.impl.font.serialization.UniHexFontReader;
 import eu.pb4.mapcanvas.impl.font.serialization.VanillaFontReader;
-import eu.pb4.polymer.resourcepack.api.AssetPaths;
 import eu.pb4.polymer.resourcepack.api.ResourcePackBuilder;
-import eu.pb4.polymer.resourcepack.extras.api.format.font.BitmapProvider;
-import eu.pb4.polymer.resourcepack.extras.api.format.font.FontAsset;
 import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -25,6 +19,7 @@ import java.util.regex.Pattern;
 public class TextAligner {
     public static ResourcePackBuilder builder;
     private static BitmapFont fontReader;
+    public static Integer FONT_INDEX = 0xF000;
 
     private static final String BACKSPACE_CHAR = " ";
     private static final String BACKSPACE_FONT_OPEN = "<font:texteffects:align>";
@@ -40,20 +35,20 @@ public class TextAligner {
     }
 
     public static String stripTags(String input) {
-        return Objects.toString(input, "").replaceAll("<[^>]*>","");
+        return Objects.toString(input, "").replaceAll("<[^>]*>", "");
     }
 
     public static String alignLine(String leftText, String centerText, String rightText, int maxPixelWidth) {
-        String leftTextStripped   = stripTags(leftText);
+        String leftTextStripped = stripTags(leftText);
         String centerTextStripped = stripTags(centerText);
-        String rightTextStripped  = stripTags(rightText);
+        String rightTextStripped = stripTags(rightText);
 
-        int leftWidth   = getTextWidth(leftTextStripped) + TagWrapperParser.countBoldVisibleCharacters(leftText);
+        int leftWidth = getTextWidth(leftTextStripped) + TagWrapperParser.countBoldVisibleCharacters(leftText);
         int centerWidth = getTextWidth(centerTextStripped) + TagWrapperParser.countBoldVisibleCharacters(centerText);
-        int rightWidth  = getTextWidth(rightTextStripped) + TagWrapperParser.countBoldVisibleCharacters(rightText);
-        int spaceWidth  = getTextWidth(" ");
+        int rightWidth = getTextWidth(rightTextStripped) + TagWrapperParser.countBoldVisibleCharacters(rightText);
+        int spaceWidth = getTextWidth(" ");
 
-        int rightStart  = maxPixelWidth - rightWidth;
+        int rightStart = maxPixelWidth - rightWidth;
         int centerStart = centerWidth == 0 ? rightStart : (int) Math.round((maxPixelWidth - centerWidth) / 2.0);
 
         StringBuilder result = new StringBuilder();
@@ -61,8 +56,8 @@ public class TextAligner {
 
         int shiftToCenter = centerStart - leftWidth;
         if (shiftToCenter > 0) {
-            int spacesToAdd      = Mth.ceil((float) shiftToCenter / spaceWidth);
-            int backspacesToAdd  = (spacesToAdd*spaceWidth - shiftToCenter) % spaceWidth;
+            int spacesToAdd = Mth.ceil((float) shiftToCenter / spaceWidth);
+            int backspacesToAdd = (spacesToAdd * spaceWidth - shiftToCenter) % spaceWidth;
             result.append(" ".repeat(spacesToAdd));
             if (backspacesToAdd > 0) {
                 result.append(BACKSPACE_FONT_OPEN)
@@ -77,11 +72,11 @@ public class TextAligner {
 
         result.append(centerText);
 
-        int afterCenter   = centerStart + centerWidth;
-        int shiftToRight  = rightStart - afterCenter;
+        int afterCenter = centerStart + centerWidth;
+        int shiftToRight = rightStart - afterCenter;
         if (shiftToRight > 0) {
-            int spacesToAdd      = Mth.ceil((float) shiftToRight / spaceWidth);
-            int backspacesToAdd  = (spacesToAdd*spaceWidth - shiftToRight) % spaceWidth;
+            int spacesToAdd = Mth.ceil((float) shiftToRight / spaceWidth);
+            int backspacesToAdd = (spacesToAdd * spaceWidth - shiftToRight) % spaceWidth;
             result.append(" ".repeat(spacesToAdd));
             if (backspacesToAdd > 0) {
                 result.append(BACKSPACE_FONT_OPEN)
@@ -91,9 +86,7 @@ public class TextAligner {
         }
 
         result.append(rightText);
-
-        var finalString = result.toString();
-        return finalString;
+        return result.toString();
     }
 
     public static List<String> alignLines(List<String> lines, Align alignment, int maxPixelWidth) {
@@ -116,9 +109,9 @@ public class TextAligner {
         BitmapFont.Glyph glyph = fontReader.characters.getOrDefault(character, fontReader.defaultGlyph);
 
         if (glyph.logicalHeight() != 0 && glyph.height() != 0) {
-            return glyph.width()+offset;
+            return glyph.width() + offset;
         } else {
-            return (int)((double)glyph.fontWidth());
+            return (int) ((double) glyph.fontWidth());
         }
     }
 
@@ -135,13 +128,13 @@ public class TextAligner {
         }
     }
 
-    public static Map<String, String> getImageTags(String text) {
+    public static List<String> getImageTags(String text) {
         Pattern pattern = Pattern.compile("<img:([^>]+)>");
         Matcher matcher = pattern.matcher(text);
 
-        Map<String, String> list = new Object2ObjectArrayMap<>();
+        List<String> list = new ObjectArrayList<>();
         while (matcher.find()) {
-            list.put(matcher.group(0), matcher.group(1));
+            list.add(matcher.group(1));
         }
 
         return list;
