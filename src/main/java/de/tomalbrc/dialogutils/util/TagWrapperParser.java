@@ -90,12 +90,6 @@ public class TagWrapperParser {
         return sb.toString();
     }
 
-    private static class Token {
-        final String html;
-        final String visibleText;
-        Token(String html, String visibleText) {
-            this.html        = html;
-            this.visibleText = visibleText;
-        }
+    private record Token(String html, String visibleText) {
     }
 }

@@ -1,5 +1,0 @@
-{
-  "providers": [
-    {"type":"bitmap","file":"dialogutils:font/background.png","ascent": 7,"height":256,"chars":["3"]}
-  ]
-}
