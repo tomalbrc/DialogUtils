@@ -26,7 +26,7 @@ public class TextAligner {
 
     public static void init(ResourcePackBuilder resourcePackBuilder) {
         Globals.RP_BUILDER = resourcePackBuilder;
-        Globals.FONT_READER = VanillaFontReader.build((x) -> new ByteArrayInputStream(Objects.requireNonNull(Globals.RP_BUILDER.getDataOrSource(x))), CanvasFont.Metadata.create("Resource Pack Font", List.of("Unknown"), "Generated"), ResourceLocation.withDefaultNamespace("default"));
+        Globals.FONT_READER = VanillaFontReader.build((x) -> new ByteArrayInputStream(Objects.requireNonNull(Globals.RP_BUILDER.getDataOrSource(x))), CanvasFont.Metadata.create("Resource Pack Font", List.of("Unknown"), "Generated"), ResourceLocation.fromNamespaceAndPath(DialogUtils.MODID, "default"));
     }
 
     public static String stripTags(String input) {
@@ -82,6 +82,10 @@ public class TextAligner {
 
         result.append(rightText);
         return result.toString();
+    }
+
+    public static String wrapDefaultFont(String s) {
+        return "<font:" + DialogUtils.FONT + ">" + s + "</font>";
     }
 
     public static List<String> alignLines(List<String> lines, Align alignment, int maxPixelWidth) {

@@ -62,7 +62,10 @@ public class DialogUtils implements ModInitializer {
         PolymerResourcePackUtils.markAsRequired();
 
         ServerLifecycleEvents.SERVER_STARTING.register(minecraftServer -> SERVER = minecraftServer);
-        PolymerResourcePackUtils.RESOURCE_PACK_CREATION_EVENT.register(TextAligner::init);
+        PolymerResourcePackUtils.RESOURCE_PACK_CREATION_EVENT.register(resourcePackBuilder -> {
+            copyVanillaFont(resourcePackBuilder);
+            TextAligner.init(resourcePackBuilder);
+        });
         ServerLifecycleEvents.SERVER_STARTED.register(DialogUtils::onStarted);
     }
 
@@ -112,8 +115,7 @@ public class DialogUtils implements ModInitializer {
             for (String path : fontTextures) {
                 try {
                     resourcePackBuilder.addData(path.replace("minecraft", namespace), ((DefaultRPBuilderAccessor) defaultRPBuilder).inkvokeGetSourceStream(path).readAllBytes());
-                } catch (IOException ignored) {
-                }
+                } catch (IOException ignored) {}
             }
 
             var defaultFont = ((DefaultRPBuilderAccessor) defaultRPBuilder).inkvokeGetSourceStream("assets/minecraft/font/include/default.json");
@@ -122,8 +124,8 @@ public class DialogUtils implements ModInitializer {
             JsonElement def = JsonParser.parseReader(new InputStreamReader(defaultFont));
             JsonElement space = JsonParser.parseReader(new InputStreamReader(spaceFont));
 
-            def.getAsJsonObject().getAsJsonArray("providers").addAll(space.getAsJsonObject().getAsJsonArray("providers"));
-            var combined = def.toString().replace("minecraft:", namespace + ":");
+            space.getAsJsonObject().getAsJsonArray("providers").addAll(def.getAsJsonObject().getAsJsonArray("providers"));
+            var combined = space.toString().replace("minecraft:", namespace + ":");
 
             resourcePackBuilder.addData("assets/" + namespace + "/font/default.json", combined.getBytes(StandardCharsets.UTF_8));
         }
