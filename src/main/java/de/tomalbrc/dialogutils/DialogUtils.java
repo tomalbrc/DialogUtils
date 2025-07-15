@@ -66,14 +66,14 @@ public class DialogUtils implements ModInitializer {
             copyVanillaFont(resourcePackBuilder);
             TextAligner.init(resourcePackBuilder);
         });
-        ServerLifecycleEvents.SERVER_STARTED.register(DialogUtils::onStarted);
+        PolymerResourcePackUtils.RESOURCE_PACK_FINISHED_EVENT.register(DialogUtils::onStarted);
     }
 
     public static void addCloseCommand() {
         CommandRegistrationCallback.EVENT.register(Command::register);
     }
 
-    private static void onStarted(MinecraftServer server) {
+    private static void onStarted() {
         var dialogRegistry = SERVER.registryAccess().lookup(Registries.DIALOG).orElseThrow();
         ((RegistryHack) dialogRegistry).du$unfreeze();
         for (Map.Entry<ResourceLocation, Dialog> entry : DIALOGS.entrySet()) {
