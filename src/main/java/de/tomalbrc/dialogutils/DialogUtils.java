@@ -4,9 +4,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import de.tomalbrc.dialogutils.mixin.DefaultRPBuilderAccessor;
-import de.tomalbrc.dialogutils.util.Command;
+import de.tomalbrc.dialogutils.util.CloseCommand;
+import de.tomalbrc.dialogutils.util.Globals;
 import de.tomalbrc.dialogutils.util.RegistryHack;
 import de.tomalbrc.dialogutils.util.TextAligner;
+import eu.pb4.mapcanvas.api.font.CanvasFont;
+import eu.pb4.mapcanvas.impl.font.serialization.VanillaFontReader;
 import eu.pb4.polymer.autohost.impl.AutoHost;
 import eu.pb4.polymer.common.impl.CommonNetworkHandlerExt;
 import eu.pb4.polymer.resourcepack.api.PolymerResourcePackUtils;
@@ -17,6 +20,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.protocol.common.ClientboundResourcePackPushPacket;
@@ -25,11 +29,14 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.dialog.Dialog;
 import net.minecraft.server.level.ServerPlayer;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 public class DialogUtils implements ModInitializer {
@@ -56,24 +63,43 @@ public class DialogUtils implements ModInitializer {
         return QUICK_ACTIONS;
     }
 
+    public static ResourcePackBuilder resourcePackBuilder() {
+        if (Globals.RP_BUILDER == null) {
+            var path = FabricLoader.getInstance().getGameDir().resolve("polymer/a");
+            Globals.RP_BUILDER = PolymerResourcePackUtils.createBuilder(FabricLoader.getInstance().getGameDir().resolve("polymer/a"));
+            path.toFile().delete();
+        }
+        return Globals.RP_BUILDER;
+    }
+
     @Override
     public void onInitialize() {
         PolymerResourcePackUtils.addModAssets(DialogUtils.MODID);
         PolymerResourcePackUtils.markAsRequired();
 
-        ServerLifecycleEvents.SERVER_STARTING.register(minecraftServer -> SERVER = minecraftServer);
+        init();
+
         PolymerResourcePackUtils.RESOURCE_PACK_CREATION_EVENT.register(resourcePackBuilder -> {
-            copyVanillaFont(resourcePackBuilder);
-            TextAligner.init(resourcePackBuilder);
+            Globals.RP_BUILDER = resourcePackBuilder;
+            DialogUtils.copyVanillaFont(resourcePackBuilder);
         });
-        PolymerResourcePackUtils.RESOURCE_PACK_FINISHED_EVENT.register(DialogUtils::onStarted);
+
+        ServerLifecycleEvents.SERVER_STARTING.register(minecraftServer -> {
+            SERVER = minecraftServer;
+            DialogUtils.onStarted(resourcePackBuilder());
+        });
+    }
+
+    public static void init() {
+        if (Globals.FONT_READER == null)
+            Globals.FONT_READER = VanillaFontReader.build((x) -> new ByteArrayInputStream(Objects.requireNonNull(resourcePackBuilder().getDataOrSource(x))), CanvasFont.Metadata.create("Resource Pack Font", List.of("Unknown"), "Generated"), ResourceLocation.fromNamespaceAndPath(DialogUtils.MODID, "default"));
     }
 
     public static void addCloseCommand() {
-        CommandRegistrationCallback.EVENT.register(Command::register);
+        CommandRegistrationCallback.EVENT.register(CloseCommand::register);
     }
 
-    private static void onStarted() {
+    private static void onStarted(ResourcePackBuilder builder) {
         var dialogRegistry = SERVER.registryAccess().lookup(Registries.DIALOG).orElseThrow();
         ((RegistryHack) dialogRegistry).du$unfreeze();
         for (Map.Entry<ResourceLocation, Dialog> entry : DIALOGS.entrySet()) {
@@ -105,7 +131,7 @@ public class DialogUtils implements ModInitializer {
         copyVanillaFont(resourcePackBuilder, MODID);
     }
 
-    private static void copyVanillaFont(ResourcePackBuilder resourcePackBuilder, String namespace) {
+    public static void copyVanillaFont(ResourcePackBuilder resourcePackBuilder, String namespace) {
         if (resourcePackBuilder instanceof DefaultRPBuilder defaultRPBuilder) {
             List<String> fontTextures = ImmutableList.of(
                     "assets/minecraft/textures/font/nonlatin_european.png",

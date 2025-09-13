@@ -10,7 +10,7 @@ import net.minecraft.network.protocol.common.ClientboundClearDialogPacket;
 
 import static net.minecraft.commands.Commands.literal;
 
-public class Command {
+public class CloseCommand {
     public static void register(CommandDispatcher<CommandSourceStack> commandDispatcher, CommandBuildContext context, Commands.CommandSelection selection) {
         commandDispatcher.register(
                 literal(DialogUtils.MODID).then(literal("close").executes(commandContext -> {

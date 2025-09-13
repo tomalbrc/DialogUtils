@@ -24,11 +24,6 @@ public class TextAligner {
         LEFT, CENTER, RIGHT
     }
 
-    public static void init(ResourcePackBuilder resourcePackBuilder) {
-        Globals.RP_BUILDER = resourcePackBuilder;
-        Globals.FONT_READER = VanillaFontReader.build((x) -> new ByteArrayInputStream(Objects.requireNonNull(Globals.RP_BUILDER.getDataOrSource(x))), CanvasFont.Metadata.create("Resource Pack Font", List.of("Unknown"), "Generated"), ResourceLocation.fromNamespaceAndPath(DialogUtils.MODID, "default"));
-    }
-
     public static String stripTags(String input) {
         return Objects.toString(input, "").replaceAll("<[^>]*>", "");
     }
