@@ -3,18 +3,16 @@ package de.tomalbrc.dialogutils;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import de.tomalbrc.dialogutils.mixin.DefaultRPBuilderAccessor;
 import de.tomalbrc.dialogutils.util.CloseCommand;
-import de.tomalbrc.dialogutils.util.Globals;
 import de.tomalbrc.dialogutils.util.RegistryHack;
-import de.tomalbrc.dialogutils.util.TextAligner;
 import eu.pb4.mapcanvas.api.font.CanvasFont;
+import eu.pb4.mapcanvas.impl.font.BitmapFont;
 import eu.pb4.mapcanvas.impl.font.serialization.VanillaFontReader;
 import eu.pb4.polymer.autohost.impl.AutoHost;
+import eu.pb4.polymer.common.api.events.SimpleEvent;
 import eu.pb4.polymer.common.impl.CommonNetworkHandlerExt;
 import eu.pb4.polymer.resourcepack.api.PolymerResourcePackUtils;
 import eu.pb4.polymer.resourcepack.api.ResourcePackBuilder;
-import eu.pb4.polymer.resourcepack.impl.generation.DefaultRPBuilder;
 import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.fabricmc.api.ModInitializer;
@@ -28,24 +26,27 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.dialog.Dialog;
 import net.minecraft.server.level.ServerPlayer;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 public class DialogUtils implements ModInitializer {
-    public static String MODID = "dialogutils";
-    public static String FONT = MODID + ":default";
-    public static MinecraftServer SERVER;
+    public final static String MODID = "dialogutils";
+    public final static String FONT = MODID + ":default";
 
     private static final Map<ResourceLocation, Dialog> DIALOGS = new Object2ObjectArrayMap<>();
     private static final List<ResourceLocation> QUICK_ACTIONS = new ObjectArrayList<>();
+    private static BitmapFont FONT_READER;
+
+    public static MinecraftServer SERVER;
+    public static final SimpleEvent<Consumer<BitmapFont>> FONT_AVAILABLE = new SimpleEvent<>();
 
     public static void registerQuickDialog(ResourceLocation id) {
         DialogUtils.QUICK_ACTIONS.add(id);
@@ -63,13 +64,16 @@ public class DialogUtils implements ModInitializer {
         return QUICK_ACTIONS;
     }
 
-    public static ResourcePackBuilder resourcePackBuilder() {
-        if (Globals.RP_BUILDER == null) {
-            var path = FabricLoader.getInstance().getGameDir().resolve("polymer/a");
-            Globals.RP_BUILDER = PolymerResourcePackUtils.createBuilder(FabricLoader.getInstance().getGameDir().resolve("polymer/a"));
-            path.toFile().delete();
+    @Nullable
+    public static BitmapFont fontReader() {
+        if (FONT_READER == null) {
+            try {
+                var builder = PolymerResourcePackUtils.createBuilder(FabricLoader.getInstance().getGameDir().resolve("polymer"));
+                FONT_READER = VanillaFontReader.build((x) -> new ByteArrayInputStream(Objects.requireNonNull(builder.getDataOrSource(x))), CanvasFont.Metadata.create("Resource Pack Font", List.of("Unknown"), "Generated"), ResourceLocation.fromNamespaceAndPath("minecraft", "default"));
+            } catch (Exception ignored) {}
         }
-        return Globals.RP_BUILDER;
+
+        return FONT_READER;
     }
 
     @Override
@@ -77,29 +81,26 @@ public class DialogUtils implements ModInitializer {
         PolymerResourcePackUtils.addModAssets(DialogUtils.MODID);
         PolymerResourcePackUtils.markAsRequired();
 
-        init();
+        if (fontReader() != null)
+            FONT_AVAILABLE.invoke(x -> x.accept(fontReader()));
 
-        PolymerResourcePackUtils.RESOURCE_PACK_CREATION_EVENT.register(resourcePackBuilder -> {
-            Globals.RP_BUILDER = resourcePackBuilder;
-            DialogUtils.copyVanillaFont(resourcePackBuilder);
-        });
+        PolymerResourcePackUtils.RESOURCE_PACK_CREATION_EVENT.register(DialogUtils::copyVanillaFont);
 
         ServerLifecycleEvents.SERVER_STARTING.register(minecraftServer -> {
             SERVER = minecraftServer;
-            DialogUtils.onStarted(resourcePackBuilder());
         });
-    }
 
-    public static void init() {
-        if (Globals.FONT_READER == null)
-            Globals.FONT_READER = VanillaFontReader.build((x) -> new ByteArrayInputStream(Objects.requireNonNull(resourcePackBuilder().getDataOrSource(x))), CanvasFont.Metadata.create("Resource Pack Font", List.of("Unknown"), "Generated"), ResourceLocation.fromNamespaceAndPath(DialogUtils.MODID, "default"));
+        ServerLifecycleEvents.SERVER_STARTED.register(DialogUtils::onStarted);
     }
 
     public static void addCloseCommand() {
         CommandRegistrationCallback.EVENT.register(CloseCommand::register);
     }
 
-    private static void onStarted(ResourcePackBuilder builder) {
+    private static void onStarted(MinecraftServer server) {
+        if (DIALOGS.isEmpty())
+            return;
+
         var dialogRegistry = SERVER.registryAccess().lookup(Registries.DIALOG).orElseThrow();
         ((RegistryHack) dialogRegistry).du$unfreeze();
         for (Map.Entry<ResourceLocation, Dialog> entry : DIALOGS.entrySet()) {
@@ -132,28 +133,27 @@ public class DialogUtils implements ModInitializer {
     }
 
     public static void copyVanillaFont(ResourcePackBuilder resourcePackBuilder, String namespace) {
-        if (resourcePackBuilder instanceof DefaultRPBuilder defaultRPBuilder) {
-            List<String> fontTextures = ImmutableList.of(
-                    "assets/minecraft/textures/font/nonlatin_european.png",
-                    "assets/minecraft/textures/font/accented.png",
-                    "assets/minecraft/textures/font/ascii.png"
-            );
-            for (String path : fontTextures) {
-                try {
-                    resourcePackBuilder.addData(path.replace("minecraft", namespace), ((DefaultRPBuilderAccessor) defaultRPBuilder).inkvokeGetSourceStream(path).readAllBytes());
-                } catch (IOException ignored) {}
-            }
-
-            var defaultFont = ((DefaultRPBuilderAccessor) defaultRPBuilder).inkvokeGetSourceStream("assets/minecraft/font/include/default.json");
-            var spaceFont = ((DefaultRPBuilderAccessor) defaultRPBuilder).inkvokeGetSourceStream("assets/minecraft/font/include/space.json");
-
-            JsonElement def = JsonParser.parseReader(new InputStreamReader(defaultFont));
-            JsonElement space = JsonParser.parseReader(new InputStreamReader(spaceFont));
-
-            space.getAsJsonObject().getAsJsonArray("providers").addAll(def.getAsJsonObject().getAsJsonArray("providers"));
-            var combined = space.toString().replace("minecraft:", namespace + ":");
-
-            resourcePackBuilder.addData("assets/" + namespace + "/font/default.json", combined.getBytes(StandardCharsets.UTF_8));
+        List<String> fontTextures = ImmutableList.of(
+                "assets/minecraft/textures/font/nonlatin_european.png",
+                "assets/minecraft/textures/font/accented.png",
+                "assets/minecraft/textures/font/ascii.png"
+        );
+        for (String path : fontTextures) {
+            resourcePackBuilder.addData(path.replace("minecraft", namespace), resourcePackBuilder.getDataOrSource(path));
         }
+
+        var defaultFont = resourcePackBuilder.getDataOrSource("assets/minecraft/font/include/default.json");
+        var spaceFont = resourcePackBuilder.getDataOrSource("assets/minecraft/font/include/space.json");
+
+        assert defaultFont != null;
+        JsonElement def = JsonParser.parseReader(new InputStreamReader(new ByteArrayInputStream(defaultFont)));
+
+        assert spaceFont != null;
+        JsonElement space = JsonParser.parseReader(new InputStreamReader(new ByteArrayInputStream(spaceFont)));
+
+        space.getAsJsonObject().getAsJsonArray("providers").addAll(def.getAsJsonObject().getAsJsonArray("providers"));
+        var combined = space.toString().replace("minecraft:", namespace + ":");
+
+        resourcePackBuilder.addData("assets/" + namespace + "/font/default.json", combined.getBytes(StandardCharsets.UTF_8));
     }
 }

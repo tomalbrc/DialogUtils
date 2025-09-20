@@ -1,15 +1,10 @@
 package de.tomalbrc.dialogutils.util;
 
 import de.tomalbrc.dialogutils.DialogUtils;
-import eu.pb4.mapcanvas.api.font.CanvasFont;
 import eu.pb4.mapcanvas.impl.font.BitmapFont;
-import eu.pb4.mapcanvas.impl.font.serialization.VanillaFontReader;
-import eu.pb4.polymer.resourcepack.api.ResourcePackBuilder;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 
-import java.io.ByteArrayInputStream;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -100,7 +95,11 @@ public class TextAligner {
     }
 
     public static int getGlyphWidth(int character, int offset) {
-        BitmapFont.Glyph glyph = Globals.FONT_READER.characters.getOrDefault(character, Globals.FONT_READER.defaultGlyph);
+        var fr = DialogUtils.fontReader();
+        if (fr == null)
+            return 5;
+
+        BitmapFont.Glyph glyph = fr.characters.getOrDefault(character, fr.defaultGlyph);
 
         if (glyph.logicalHeight() != 0 && glyph.height() != 0) {
             return glyph.width() + offset;
