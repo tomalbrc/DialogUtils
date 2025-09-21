@@ -1,7 +1,6 @@
 package de.tomalbrc.dialogutils.mixin;
 
 import de.tomalbrc.dialogutils.DialogUtils;
-import de.tomalbrc.dialogutils.util.Globals;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;

@@ -68,7 +68,7 @@ public class DialogUtils implements ModInitializer {
     public static BitmapFont fontReader() {
         if (FONT_READER == null) {
             try {
-                var builder = PolymerResourcePackUtils.createBuilder(FabricLoader.getInstance().getGameDir().resolve("polymer"));
+                var builder = PolymerResourcePackUtils.createBuilder(FabricLoader.getInstance().getGameDir().resolve("polymer/dialog"));
                 FONT_READER = VanillaFontReader.build((x) -> new ByteArrayInputStream(Objects.requireNonNull(builder.getDataOrSource(x))), CanvasFont.Metadata.create("Resource Pack Font", List.of("Unknown"), "Generated"), ResourceLocation.fromNamespaceAndPath("minecraft", "default"));
             } catch (Exception ignored) {}
         }
