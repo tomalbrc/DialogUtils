@@ -1,8 +1,10 @@
 package de.tomalbrc.dialogutils.util;
 
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FontDescription;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 
 import java.util.Optional;
@@ -35,7 +37,11 @@ public class ComponentAligner {
         AtomicInteger w = new AtomicInteger(0);
         for (Component part : component.toFlatList()) {
             int val = part.visit((style, content) -> {
-                int textWidth = TextUtil.getTextWidth(content, style.getFont());
+                if (!(style.getFont() instanceof FontDescription.Resource(ResourceLocation id))) {
+                    return Optional.of(9); // 8 + 1
+                }
+
+                int textWidth = TextUtil.getTextWidth(content, id);
 
                 if (style.isBold()) {
                     textWidth += content.length();
