@@ -37,6 +37,13 @@ public class DialogUtils implements ModInitializer {
 
     public static void registerDialog(ResourceLocation id, Dialog dialog) {
         DialogUtils.DIALOGS.put(id, dialog);
+
+        var dialogRegistry = SERVER.registryAccess().lookup(Registries.DIALOG).orElseThrow();
+        ((RegistryHack) dialogRegistry).du$unfreeze();
+        dialogRegistry.createIntrusiveHolder(dialog);
+        ((RegistryHack) dialogRegistry).du$remove(id);
+        Registry.register(dialogRegistry, id, dialog);
+        SERVER.registryAccess().freeze();
     }
 
     public static Map<ResourceLocation, Dialog> getDialogs() {
@@ -57,27 +64,10 @@ public class DialogUtils implements ModInitializer {
         ServerLifecycleEvents.SERVER_STARTING.register(minecraftServer -> {
             SERVER = minecraftServer;
         });
-
-        ServerLifecycleEvents.SERVER_STARTED.register(DialogUtils::onStarted);
     }
 
     public static void addCloseCommand() {
         CommandRegistrationCallback.EVENT.register(CloseCommand::register);
-    }
-
-    private static void onStarted(MinecraftServer server) {
-        if (DIALOGS.isEmpty())
-            return;
-
-        var dialogRegistry = SERVER.registryAccess().lookup(Registries.DIALOG).orElseThrow();
-        ((RegistryHack) dialogRegistry).du$unfreeze();
-        for (Map.Entry<ResourceLocation, Dialog> entry : DIALOGS.entrySet()) {
-            Dialog dialog = entry.getValue();
-            dialogRegistry.createIntrusiveHolder(dialog);
-            ((RegistryHack) dialogRegistry).du$remove(entry.getKey());
-            Registry.register(dialogRegistry, entry.getKey(), dialog);
-        }
-        SERVER.registryAccess().freeze();
     }
 
     @SuppressWarnings("all")
