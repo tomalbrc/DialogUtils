@@ -24,7 +24,7 @@ public class ComponentAligner {
             var space = spacer(half);
             if (remainingSpace % 2 == 1) {
                 var space2 = spacer(half+1);
-                return Component.empty().append(space).append(component).append(space2);
+                return Component.empty().append(space2).append(component).append(space);
             }
 
             return Component.empty().append(space).append(component).append(space);
