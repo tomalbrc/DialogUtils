@@ -11,7 +11,6 @@ import eu.pb4.polymer.resourcepack.api.PolymerResourcePackUtils;
 import eu.pb4.polymer.resourcepack.api.ResourcePackBuilder;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,6 +22,8 @@ import java.util.Map;
 import java.util.Objects;
 
 public class FontUtil {
+    public static final ResourceLocation VANILLA_DEFAULT_FONT = ResourceLocation.withDefaultNamespace("default");
+
     public final static ResourceLocation FONT = ResourceLocation.fromNamespaceAndPath(DialogUtils.MODID, "default");
     public static final ResourceLocation ALIGN_FONT = ResourceLocation.fromNamespaceAndPath(DialogUtils.MODID, "align");
     public static Map<ResourceLocation, BitmapFont> FONTS = new Object2ObjectOpenHashMap<>();
@@ -40,16 +41,16 @@ public class FontUtil {
 
     @Nullable
     public static BitmapFont fontReader(ResourcePackBuilder builder) {
-        if (FONTS.containsKey(Style.DEFAULT_FONT)) {
+        if (!FONTS.containsKey(VANILLA_DEFAULT_FONT)) {
             try {
                 if (builder == null) builder = PolymerResourcePackUtils.createBuilder(FabricLoader.getInstance().getGameDir().resolve("polymer/dialog"));
-                var fr = loadFont(builder, Style.DEFAULT_FONT);
-                FONTS.put(Style.DEFAULT_FONT, fr);
+                var fr = loadFont(builder, VANILLA_DEFAULT_FONT);
+                FONTS.put(VANILLA_DEFAULT_FONT, fr);
                 FONTS.put(FontUtil.FONT, fr);
             } catch (Exception ignored) {}
         }
 
-        return FONTS.get(Style.DEFAULT_FONT);
+        return FONTS.get(VANILLA_DEFAULT_FONT);
     }
 
     @Nullable
@@ -62,7 +63,7 @@ public class FontUtil {
     }
 
     public static void registerDefaultFonts(ResourcePackBuilder resourcePackBuilder) {
-        var def = loadFont(resourcePackBuilder, Style.DEFAULT_FONT);
+        var def = loadFont(resourcePackBuilder, VANILLA_DEFAULT_FONT);
         FONTS.put(FontUtil.FONT, def);
         loadFont(resourcePackBuilder, FontUtil.ALIGN_FONT);
     }
