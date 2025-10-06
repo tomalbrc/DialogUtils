@@ -3,12 +3,15 @@ package de.tomalbrc.dialogutils.util;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import com.mojang.logging.LogUtils;
 import de.tomalbrc.dialogutils.DialogUtils;
+import de.tomalbrc.dialogutils.mixin.DefaultRPBuilderAccessor;
 import eu.pb4.mapcanvas.api.font.CanvasFont;
 import eu.pb4.mapcanvas.impl.font.BitmapFont;
 import eu.pb4.mapcanvas.impl.font.serialization.VanillaFontReader;
 import eu.pb4.polymer.resourcepack.api.PolymerResourcePackUtils;
 import eu.pb4.polymer.resourcepack.api.ResourcePackBuilder;
+import eu.pb4.polymer.resourcepack.impl.generation.DefaultRPBuilder;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.network.chat.FontDescription;
@@ -21,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 
 public class FontUtil {
     public final static FontDescription.Resource FONT = new FontDescription.Resource(ResourceLocation.fromNamespaceAndPath(DialogUtils.MODID, "default"));
@@ -73,12 +77,26 @@ public class FontUtil {
                 "assets/minecraft/textures/font/accented.png",
                 "assets/minecraft/textures/font/ascii.png"
         );
-        for (String path : fontTextures) {
-            resourcePackBuilder.addData(path.replace("minecraft", namespace), resourcePackBuilder.getDataOrSource(path));
+
+        Function<String, byte[]> getter = null;
+        try {
+            if (resourcePackBuilder instanceof DefaultRPBuilder x) {
+                getter = path -> ((DefaultRPBuilderAccessor)x).getFileMap().get(path).readAllBytes();
+            }
+        } catch (Exception e) {
+            LogUtils.getLogger().error("Error copying vanilla font: ", e);
         }
 
-        var defaultFont = resourcePackBuilder.getDataOrSource("assets/minecraft/font/include/default.json");
-        var spaceFont = resourcePackBuilder.getDataOrSource("assets/minecraft/font/include/space.json");
+        if (getter == null) {
+            getter = resourcePackBuilder::getDataOrSource;
+        }
+
+        for (String path : fontTextures) {
+            resourcePackBuilder.addData(path.replace("minecraft", namespace), getter.apply(path));
+        }
+
+        var defaultFont = getter.apply("assets/minecraft/font/include/default.json");
+        var spaceFont = getter.apply("assets/minecraft/font/include/space.json");
 
         assert defaultFont != null;
         JsonElement def = JsonParser.parseReader(new InputStreamReader(new ByteArrayInputStream(defaultFont)));
