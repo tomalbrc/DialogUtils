@@ -81,7 +81,7 @@ public class FontUtil {
         Function<String, byte[]> getter = null;
         try {
             if (resourcePackBuilder instanceof DefaultRPBuilder x) {
-                getter = path -> ((DefaultRPBuilderAccessor)x).getFileMap().get(path).readAllBytes();
+                getter = path -> ((DefaultRPBuilderAccessor)x).invokeGetSourceData(path);
             }
         } catch (Exception e) {
             LogUtils.getLogger().error("Error copying vanilla font: ", e);
