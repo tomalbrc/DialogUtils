@@ -6,11 +6,10 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 import java.util.HashMap;
+import java.util.Map;
 
 @Mixin(value = DefaultRPBuilder.class, remap = false)
 public interface DefaultRPBuilderAccessor {
     @Accessor(value = "fileMap")
-    default HashMap<String, PackResource> getFileMap() {
-        throw new UnsupportedOperationException();
-    }
+    HashMap<String, PackResource> getFileMap();
 }
